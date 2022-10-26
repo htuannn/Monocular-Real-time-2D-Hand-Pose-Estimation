@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import cv2
 
 RAW_IMG_SIZE=228
 MODEL_INPUT_SIZE=128
@@ -73,10 +74,10 @@ def gen_heatmap(img, pt, sigma):
 def vector_to_heatmaps(keypoints):
     """
     Creates 2D heatmaps from keypoint locations for a single image
-    Input: array of size N_KEYPOINTS x 2
-    Output: array of size N_KEYPOINTS x MODEL_IMG_SIZE x MODEL_IMG_SIZE
+    Input: array of size N_JOINTS x 2
+    Output: array of size N_JOINTS x MODEL_IMG_SIZE x MODEL_IMG_SIZE
     """
-    heatmaps = np.zeros([N_KEYPOINTS, MODEL_OUTPUT_SIZE, MODEL_OUTPUT_SIZE])
+    heatmaps = np.zeros([N_JOINTS, MODEL_OUTPUT_SIZE, MODEL_OUTPUT_SIZE])
     for k, (x, y) in enumerate(keypoints):
         x, y = int(x * MODEL_OUTPUT_SIZE), int(y * MODEL_OUTPUT_SIZE)
         if (0 <= x < MODEL_OUTPUT_SIZE) and (0 <= y < MODEL_OUTPUT_SIZE):
