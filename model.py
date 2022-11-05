@@ -52,20 +52,20 @@ class ShallowUNet(nn.Module):
 
 
 class ResBottleneckBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, downsample=False):
+    def __init__(self, in_channels, out_channels, downsample):
         super(ResBottleneckBlock,self).__init__()
         self.downsample = downsample
         self.conv1 = nn.Conv2d(in_channels, out_channels//4, kernel_size=1, stride=1)
-        #self.conv2 = nn.Conv2d(out_channels//4, out_channels//4, kernel_size=3, stride=2 if downsample else 1, padding=1)
-        self.conv2 = nn.Conv2d(out_channels//4, out_channels//4, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(out_channels//4, out_channels//4, kernel_size=3, stride=2 if downsample else 1, padding=1)
+        #self.conv2 = nn.Conv2d(out_channels//4, out_channels//4, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv2d(out_channels//4, out_channels, kernel_size=1, stride=1)
         self.shortcut = nn.Sequential()
         
         if self.downsample or in_channels != out_channels:
             self.shortcut = nn.Sequential(
-                #nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=2 if self.downsample else 1),
-                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=1),
-                nn.AvgPool2d(3,stride=1),
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=2 if self.downsample else 1),
+                #nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=1),
+                #nn.AvgPool2d(3,stride=1),
                 nn.BatchNorm2d(out_channels)
             )
         self.bn1 = nn.BatchNorm2d(out_channels//4)
@@ -140,21 +140,39 @@ class Resnet(nn.Module):
 		for i in range(1, layer[3]):
 			self.layer4.add_module('conv5_%d' %(i+1,), Resblock(self.filters[4], self.filters[4], downsample=False))
 		
+		"""
 		self.layer5= nn.Sequential(
 			nn.Conv2d(self.filters[4], self.filters[3], kernel_size=3, stride=1, padding=1, bias=False),
 			nn.Conv2d(self.filters[3], self.filters[1], kernel_size=3, stride=1, padding=1, bias=False),
 			nn.BatchNorm2d(256),
 			nn.ReLU())
 		self.prediction= nn.Conv2d(self.filters[1], joints, 1, 1, 0)
+		"""
+		self.decoder = nn.Sequential(
+			nn.ConvTranspose2d(self.filters[4], self.filters[3], stride= 2, padding=1, kernel_size=4, output_padding=0, bias=False),
+			nn.BatchNorm2d(self.filters[3]),
+			nn.ReLU(inplace=True),
 
+			nn.ConvTranspose2d(self.filters[3], self.filters[2], stride= 2, padding=1, kernel_size=4, output_padding=0, bias=False),
+			nn.BatchNorm2d(self.filters[2]),
+			nn.ReLU(inplace=True),
+			
+			nn.ConvTranspose2d(self.filters[2], self.filters[1], stride= 2, padding=1, kernel_size=4, output_padding=0, bias=False),
+			nn.BatchNorm2d(self.filters[1]),
+			nn.ReLU(inplace=True),
+			
+
+			nn.ConvTranspose2d(self.filters[1], 21, stride= 2, padding=1, kernel_size=4, output_padding=0, bias=False),
+			
+			)
 	def forward(self, input):
 		input= self.layer0(input)
 		input= self.layer1(input)
 		input= self.layer2(input)
 		input= self.layer3(input)
 		input= self.layer4(input)
-		input= self.layer5(input)
-		hmap= self.prediction(input).sigmoid()
+		#input= self.layer5(input)
+		hmap= self.decoder(input).sigmoid()
 
 		return hmap
 
