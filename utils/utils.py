@@ -7,6 +7,7 @@ MODEL_INPUT_SIZE=128
 MODEL_OUTPUT_SIZE=64
 HEATMAP_SIGMA=1
 N_JOINTS=21
+lambda_hm=1
 
 def projectPoints(xyz, K):
     """
