@@ -146,7 +146,6 @@ class Resnet(nn.Module):
 			nn.Conv2d(self.filters[3], self.filters[1], kernel_size=3, stride=1, padding=1, bias=False),
 			nn.BatchNorm2d(256),
 			nn.ReLU())
-		self.prediction= nn.Conv2d(self.filters[1], joints, 1, 1, 0)
 		"""
 		self.decoder = nn.Sequential(
 			nn.ConvTranspose2d(self.filters[4], self.filters[3], stride= 2, padding=1, kernel_size=4, output_padding=0, bias=False),
@@ -163,8 +162,10 @@ class Resnet(nn.Module):
 			
 
 			nn.ConvTranspose2d(self.filters[1], 21, stride= 2, padding=1, kernel_size=4, output_padding=0, bias=False),
-			
+			nn.BatchNorm2d(joints),
+			nn.ReLU(inplace=True),
 			)
+		self.prediction= nn.Conv2d(joints, joints, stride=1, padding=1, kernel_size=3)
 	def forward(self, input):
 		input= self.layer0(input)
 		input= self.layer1(input)
@@ -172,24 +173,7 @@ class Resnet(nn.Module):
 		input= self.layer3(input)
 		input= self.layer4(input)
 		#input= self.layer5(input)
-		hmap= self.decoder(input).sigmoid()
+		input= self.decoder(input)
+		hmap= self.prediction(input).sigmoid()
 
 		return hmap
-
-# class net_2D(nn.Module):
-# 	def __init__(in_depth, out_depth, stride ,joints= 21):
-# 		super(net_2D, self).__init__()
-# 		self.layer=nn.Sequential(
-# 			#3x3 convolution with padding
-# 			nn.Conv2d(in_depth, out_depth, kernel_size=3, stride, padding=1, bias=False), 
-# 			nn.BatchNorm2d(out_depth),
-# 			nn.ReLU(),
-# 			)
-# 		self.out= nn.Conv2d(out_depth, joints 1, 1, 0)
-
-# 	def forward(self, x):
-# 		x= self.layer(x)
-# 		x= self.out(x).sigmoid()
-# 		return x 
-
-
